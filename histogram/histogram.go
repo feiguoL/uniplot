@@ -83,14 +83,21 @@ func Hist(bins int, input []float64) (Histogram, error) {
 
 // HistByCustomRange creates an histogram by custom range, like elasticsearch data histogram query(left closed)
 func HistByCustomRange(min, max, interval float64, input []float64) (Histogram, error) {
-	if len(input) == 0 || interval == 0 {
+	if interval == 0 {
 		return Histogram{}, nil
 	}
 
 	sort.Sort(sort.Float64Slice(input))
+	buckets := rangeDivideBuckets(min, max, interval)
 
-	if min > input[len(input)-1] || max < input[0] {
-		return Histogram{}, nil
+	// input data beyond range min and max
+	if len(input) == 0 || min > input[len(input)-1] || max < input[0] {
+		return Histogram{
+			Min:     0,
+			Max:     0,
+			Count:   len(buckets),
+			Buckets: buckets,
+		}, nil
 	}
 
 	// input data equals range min and max
@@ -102,16 +109,6 @@ func HistByCustomRange(min, max, interval float64, input []float64) (Histogram, 
 			Buckets: []Bucket{{Count: len(input), Min: min, Max: max}},
 		}, nil
 	}
-
-	bins := cast.ToInt((max - min) / interval)
-	buckets := make([]Bucket, 0, bins)
-
-	bmax := min
-	for (bmax + interval) < max {
-		buckets = append(buckets, Bucket{Min: bmax, Max: bmax + interval})
-		bmax += interval
-	}
-	buckets = append(buckets, Bucket{Min: bmax, Max: max})
 
 	minC, maxC := 0, 0
 	for _, val := range input {
@@ -213,4 +210,18 @@ func imax(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func rangeDivideBuckets(min, max, interval float64) []Bucket {
+	bins := cast.ToInt((max - min) / interval)
+	buckets := make([]Bucket, 0, bins)
+
+	bmax := min
+	for (bmax + interval) < max {
+		buckets = append(buckets, Bucket{Min: bmax, Max: bmax + interval})
+		bmax += interval
+	}
+	buckets = append(buckets, Bucket{Min: bmax, Max: max})
+
+	return buckets
 }

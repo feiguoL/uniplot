@@ -133,5 +133,27 @@ func TestHistByCustomRange(t *testing.T) {
 			//16-18  0%     ▏
 			//18-20  0%     ▏
 		})
+
+		Convey("Test zero range for input", func() {
+			data = []float64{
+				-1,
+				1,
+			}
+
+			hist, err := HistByCustomRange(6, 20, 2, data)
+			So(err, ShouldBeNil)
+			So(hist.Count, ShouldEqual, 7)
+			So(len(hist.Buckets), ShouldEqual, 7)
+			if err := Fprint(os.Stdout, hist, Linear(5)); err != nil {
+				panic(err)
+			}
+			//6-8    25%    █████▏  3
+			//8-10   0%     ▏
+			//10-12  8.33%  █▋      1
+			//12-14  0%     ▏
+			//14-16  0%     ▏
+			//16-18  0%     ▏
+			//18-20  0%     ▏
+		})
 	})
 }
